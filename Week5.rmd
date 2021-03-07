@@ -1,0 +1,103 @@
+---
+title: "Week5"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Install library
+I am using DBI library for database access and tidyverse library for data manipulation.
+```{r}
+library(DBI)
+library(tidyverse)
+```
+
+## Connect to SQL Server
+I will create ODBC connection object
+```{r}
+con <- dbConnect(odbc::odbc(),
+  .connection_string = "Driver={SQL Server};Server=(local);Database=tb;Trusted_Connection=Yes;")
+```
+
+## Create tables
+I will create three tables with foreign key references and primary keys.
+I will use a “wide” structure for tables.
+```{r}
+rs = dbSendStatement(con, "DROP TABLE IF EXISTS dbo.AirCurrent;
+DROP TABLE IF EXISTS dbo.Airline;
+DROP TABLE IF EXISTS dbo.AirStatus;
+
+CREATE TABLE dbo.Airline (
+AirlineID INT NOT NULL PRIMARY KEY,
+Airline VARCHAR(30) NOT NULL );
+
+CREATE TABLE dbo.AirStatus (
+AirStatusID INT NOT NULL PRIMARY KEY,
+AirStatus VARCHAR(30) NOT NULL );
+
+CREATE TABLE dbo.AirCurrent (
+AirlineID INT NOT NULL FOREIGN KEY REFERENCES Airline(AirlineID),
+AirStatusID INT NOT NULL FOREIGN KEY REFERENCES AirStatus(AirStatusID),
+[Los_Angeles] INT NOT NULL,
+Phoenix INT NOT NULL,
+[San Diego] INT NOT NULL,
+[San Francisco] INT NOT NULL,
+Seattle INT NOT NULL,
+CONSTRAINT PK_AirCurrent PRIMARY KEY (AirlineID,AirStatusID));")
+dbClearResult(rs)
+
+```
+## Load data into SQL table
+Because number of records is small I will use INSERT statement instead of bulk load from csv files.
+```{r}
+rs = dbSendStatement(con, "INSERT INTO dbo.Airline (AirlineID, Airline) VALUES
+(1, 'ALASKA'),
+(2, 'AM WEST');
+INSERT INTO dbo.AirStatus (AirStatusID, AirStatus) VALUES
+(1, 'on time'),
+(2, 'delayed');
+INSERT INTO dbo.AirCurrent(AirlineID,AirStatusID,Los_Angeles,Phoenix,[San Diego],[San Francisco],Seattle)
+VALUES
+(1, 1, 497,221,212,503,1841),
+(1,2,62,12,20,102,305),
+(2,1,694,4840,383,320,201),
+(2,2,117,416,65,129,61);")
+dbClearResult(rs)
+```
+
+## Load data into R data.frame
+I will create a SELECT statement which will join three tables.
+```{r}
+rs <- dbSendQuery(con, "SELECT Airline.Airline, AirStatus.AirStatus, Los_Angeles,Phoenix,[San Diego],[San Francisco],Seattle
+FROM dbo.AirCurrent AirCurrent
+JOIN dbo.Airline Airline ON AirCurrent.AirlineID = Airline.AirlineID
+JOIN dbo.AirStatus AirStatus ON AirCurrent.AirStatusID = AirStatus.AirStatusID;")
+df = data.frame(dbFetch(rs))
+dbClearResult(rs)
+```
+
+## Show query result
+```{r}
+head(df)
+
+```
+
+## Convert R dataframe to tibble
+```{r}
+tbl = tibble(df)
+tbl
+```
+# tidy and transform data
+I will use pivot_wider to pivoting original tibble to wide format
+
+```{r}
+tbl2 = tbl %>% pivot_wider(names_from = AirStatus, values_from = c(Los_Angeles,Phoenix,San.Diego,San.Francisco,Seattle))
+```
+
+## Perform analysis to compare the arrival delays for the two airlines
+```{r}
+tbl3 =mutate(tbl2, arrival_delays = Los_Angeles_delayed+Phoenix_delayed+San.Diego_delayed+San.Francisco_delayed+Seattle_delayed)
+select(tbl3,Airline, arrival_delays)
+```
+
