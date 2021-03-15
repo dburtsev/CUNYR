@@ -1,0 +1,194 @@
+---
+title: "Ptrojct 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Install library
+I am using DBI library for database access and tidyverse library for data manipulation.
+```{r}
+library(DBI)
+library(tidyverse)
+```
+
+## Connect to SQL Server
+I will create ODBC connection object
+```{r}
+con <- dbConnect(odbc::odbc(),
+  .connection_string = "Driver={SQL Server};Server=(local);Database=tb;Trusted_Connection=Yes;")
+```
+
+## Weight Data for Domestic Cats
+144 adult (over 2kg in weight) cats used for experiments with the drug digitalis had their heart and body weight recorded. 47 of the cats were female and 97 were male. 
+https://stat.ethz.ch/R-manual/R-devel/library/boot/html/catsM.html
+This data frame contains the following columns:
+
+Sex - A factor for the sex of the cat (levels are F and M: all cases are M in this subset).
+Bwt - Body weight in kg.
+Hwt - Heart weight in g.
+
+Source
+The data were obtained from Fisher, R.A. (1947) The analysis of covariance method for the relation between a part and the whole. Biometrics, 3, 65–68.
+
+## The leading causes of death by sex and ethnicity in New York City 
+Cause of death is derived from the NYC death certificate which is issued for every death that occurs in New York City.
+https://data.cityofnewyork.us/Health/New-York-City-Leading-Causes-of-Death/jb7j-dtam
+
+###Columns in this Dataset:
+Year - The year of death.
+Leading Cause - The cause of death.
+Sex - The decedent's sex.
+Race Ethnicity - The decedent's ethnicity.
+Deaths - The number of people who died due to cause of death.
+Death Rate - The death rate within the sex and Race/ethnicity category
+Age Adjusted Death Rate - The age-adjusted death rate within the sex and Race/ethnicity category
+
+## NYC Civil Service Titles
+List of Civil Service title codes and title descriptions used by City of New York agencies
+https://data.cityofnewyork.us/City-Government/NYC-Civil-Service-Titles/nzjr-3966
+
+###Columns in this Dataset:
+Title Code - Civil Service Title Code
+Title Description - Name/Description of title
+Standard Hours - Standard weekly hours for the title
+Assignment Level - Assignment level within title
+Union Code - Unique code for union representing title, if applicable
+Union Description	- Name/Description of union representing title, if applicable
+Bargaining Unit Short Name - Acronym or short name for union designated as the bargaining unit for title, if applicable
+Bargaining Unit Description - Name/description of union designated as the bargaining unit for title, if applicable
+Minimum Salary Rate - Minimum salary range for the title
+Maximum Salary Rate - Maximum salary range for the title
+
+### Create tables for datasets:
+```{r}
+rs = dbSendStatement(con, "
+--DROP TABLE IF EXISTS dbo.cats;
+--CREATE TABLE dbo.cats(N VARCHAR(3), Sex VARCHAR(3), Bwt DECIMAL(3,1), Hwt DECIMAL(4,2));
+
+--DROP TABLE IF EXISTS dbo.CauseOfDeath; 
+--CREATE TABLE dbo.CauseOfDeath (
+--[Year] INT NOT NULL,
+--LeadingCause VARCHAR(130) NOT NULL,
+--Sex VARCHAR(6),
+--RaceEthnicity VARCHAR(40),
+--Deaths VARCHAR(40),
+--DeathRate VARCHAR(40),
+--AgeAdjustedDeathRate VARCHAR(40));
+
+--DROP TABLE IF EXISTS dbo.ServiceTitles;
+--CREATE TABLE dbo.ServiceTitles (
+--TitleCode CHAR(5) NOT NULL,
+--Title_Description VARCHAR(70) NOT NULL,
+--StandardHours FLOAT NOT NULL,
+--Assignment_Level VARCHAR(50),
+--UnionCode VARCHAR(20),
+--Union_Description VARCHAR(70),
+--BargainingUnitShortName VARCHAR(5),
+--BargainingUnitDescription VARCHAR(70),
+--MinimumSalaryRate VARCHAR(20),
+--MaximumSalaryRate VARCHAR(20));
+"
+)
+dbClearResult(rs)
+```
+
+### Load data into tables
+```{r}
+rs = dbSendStatement(con, "
+-- BULK INSERT dbo.cats FROM 'cats.csv'
+-- BULK INSERT dbo.ServiceTitles FROM 'NYC_Civil_Service_Titles.csv'
+-- BULK INSERT dbo.CauseOfDeath FROM 'New_York_City_Leading_Causes_of_Death.csv' WITH (FORMAT = 'CSV');
+")
+dbClearResult(rs)
+```
+
+## Query database into R
+```{r}
+rs <- dbSendQuery(con, "
+SELECT N
+      ,Sex
+      ,Bwt
+      ,Hwt
+FROM dbo.cats
+")
+df_cat = data.frame(dbFetch(rs))
+dbClearResult(rs)
+rs <- dbSendQuery(con, "
+SELECT Year
+      ,LeadingCause
+      ,Sex
+      ,RaceEthnicity
+      ,Deaths
+      ,DeathRate
+      ,AgeAdjustedDeathRate
+FROM dbo.CauseOfDeath2
+")
+df_c_of_d = data.frame(dbFetch(rs))
+dbClearResult(rs)
+rs <- dbSendQuery(con, "
+SELECT TitleCode
+      ,Title_Description
+      ,StandardHours
+      ,Assignment_Level
+      ,UnionCode
+      ,Union_Description
+      ,BargainingUnitShortName
+      ,BargainingUnitDescription
+      ,MinimumSalaryRate
+      ,MaximumSalaryRate
+FROM dbo.ServiceTitles
+")
+df_tc = data.frame(dbFetch(rs))
+dbClearResult(rs)
+```
+
+## ## Convert R dataframe to tibble
+```{r}
+cats = tibble(df_cat)
+CauseOfDeath = tibble(df_c_of_d)
+ServiceTitles = tibble(df_tc)
+```
+
+
+## Preview results
+### Cats
+```{r}
+head(cats)
+```
+
+### Cause Of Death
+```{r}
+head(CauseOfDeath)
+```
+
+### ServiceTitles
+```{r}
+head(ServiceTitles)
+```
+
+###  Compute cases per year 
+```{r}
+CauseOfDeath$Year <- as.integer(CauseOfDeath$Year) 
+CauseOfDeath$Deaths <- as.integer(CauseOfDeath$Deaths) 
+CauseOfDeath %>%  count(Year, wt = Deaths)
+```
+
+## Cats pivot
+```{r}
+cats %>% pivot_wider(names_from = Sex, values_from = c(Bwt,Hwt))
+```
+
+
+## Unite Minimum Salary Rate and Maximum Salary Rate
+
+```{r}
+ServiceTitles %>% unite(SalaryRate, MinimumSalaryRate, MaximumSalaryRate)
+```
+
+## Disconnect from database
+```{r}
+dbDisconnect(con)
+```
+
