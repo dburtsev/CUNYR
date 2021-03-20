@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<books>
+<book>
+    <title>Data Science for Business"</title>
+    <authors><author>Foster Provost</author><author>Tom Fawcett</author></authors>
+  <ISBN>1449361323</ISBN>
+  <price>$37</price>
+</book>
+<book>
+  <title>Doing Math with Python</title>
+  <authors><author>Amid Saha</author></authors>
+  <ISBN>1593276400</ISBN>
+  <price>$21</price>
+</book>
+<book>
+  <title>T-SQL Fundamentals</title>
+  <authors><author>Itzik Ben-Gan</author></authors>
+  <ISBN>9781509302000</ISBN>
+  <price>$41</price>
+</book>
+</books>

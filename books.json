@@ -1,0 +1,22 @@
+[
+  {
+    title: "Data Science for Business",
+    authors: "[Foster Provost",
+    "Tom Fawcett"
+  ],
+  ISBN: "1449361323",
+  price: "$37"
+},
+{
+  title: "Doing Math with Python",
+  authors: "Amid Saha",
+  ISBN: "1593276400",
+  price: "$21"
+},
+{
+  title: "T-SQL Fundamentals",
+  authors: "Itzik Ben-Gan",
+  ISBN: "9781509302000",
+  price: "$41"
+}
+]
