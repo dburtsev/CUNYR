@@ -1,0 +1,32 @@
+---
+title: "Week9"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load library
+*The jsonlite package is a JSON parser/generator optimized for the web. Its main strength is that it implements a bidirectional mapping between JSON data and the most important R data types. Thereby we can convert between R objects and JSON without loss of type or information, and without the need for any manual data munging. This is ideal for interacting with web APIs, or to build pipelines where data structures seamlessly flow in and out of R using JSON*
+```{r}
+library(jsonlite)
+```
+
+## Most Popular
+
+*Provides services for getting the most popular articles on NYTimes.com based on emails, shares, or views*
+
+```{r}
+json = 'https://api.nytimes.com/svc/mostpopular/v2/viewed/1.json?api-key=w0X7wKM0ciIeLdpbAfhkLEEWo5KRzGPr'
+df = fromJSON(json)
+```
+
+## Get the Structure of the Data Fram
+
+*The structure of the data frame can be seen by using str() function.*
+
+```{r}
+str(df)
+```
+
