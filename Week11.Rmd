@@ -1,0 +1,53 @@
+---
+title: "Recommender Systems"
+output: html_document
+author: Dmitriy Burtsev
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Your task is to analyze an existing recommender system that you find interesting. You should:
+
+1. Perform a Scenario Design analysis as described below. Consider whether it makes sense for your selected recommender system to perform scenario design twice, once for the organization (e.g. Amazon.com) and once for the organization’s customers.
+
+2. Attempt to reverse engineer what you can about the site, from the site interface and any available information that you can find on the Internet or elsewhere.
+
+3. Include specific recommendations about how to improve the site’s recommendation capabilities going forward.
+
+4. Create your report using an R Markdown file, and create a discussion thread with a link to the GitHub repo where your Markdown file notebook resides. You are not expected to need to write code for this discussion assignment.
+
+## Site: https://www.newegg.com/
+*Founded in 2001, Newegg began selling PC components and helped popularize the PC-building movement, and in doing so, developed a cult following among PC and DIY enthusiasts. Since then, Newegg Inc. is the leading tech-focused e-retailer in North America, with a global reach in Europe, South America, Asia Pacific and the Middle East. Today, millions of customers turn to Newegg to shop for the latest PC components, consumer electronics, smart home and gaming products. Newegg is consistently ranked as one of the best online shopping destinations, and the company regularly earns industry-leading customer service ratings.*
+
+ ![](https://c1.neweggimages.com/WebResource/Themes/Nest/logos/logo_424x210.png)
+
+## Scenario Design Analysis
+1. Who are Newegg targeted users? The platform is targeted to PC and DIY enthusiasts.
+
+2. What are their key goals? The goals are to help users build or upgrade PC.
+
+3. How can Newegg help them accomplish these goals? In June 2020, Newegg introduced the Newegg PC Builder, an online configurator that lets customers configure and source all the components needed to build a custom PC. 
+
+## Reverse Engineer the Reccomender
+
+Newegg has "RECOMMENDED FOR YOU" section. There are three subsections:  Similar Items, Combos, and Customers Also Bought.
+It looks like Newegg use three different recommender systems. 
+
+### Similar Items
+
+Similar Items group items of the same type. If you are looking for a monitor, similar items will be other monitors.
+
+### Combos
+
+Because I chose a gamer monitor, Newegg recommends me Xbox Game Pass for PC. 
+
+### Customers Also Bought
+
+This section was based on other users' experiences. In my case, I got cables, motherboard, and memory module.
+
+### Recommendations About how to Improve the Site’s Recommendation Capabilities
+
+The site looks almost perfect. I would like to add links to the monitor manufactured site (Asus).
+
