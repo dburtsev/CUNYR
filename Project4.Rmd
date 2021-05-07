@@ -1,0 +1,97 @@
+---
+title: "Project4"
+output: html_document
+autor: Dmitriy Burtsev
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries
+
+```{r}
+library(tidyverse)
+library(tm)
+require(RTextTools)
+```
+
+## Load all files from folders into R
+Each classification has TWO (2) sub-folders, e.g. “easy_ham” and “easy_ham_2”. This makes it easier as the first set is used for training data, and the second set (with “_2”) is used for testing data. 
+```{r}
+spam_files = list.files(path = "C:/CUNY/DATA607/Project4/spam", full.names = TRUE)
+spam2_files = list.files(path = "C:/CUNY/DATA607/Project4/spam_2", full.names = TRUE)
+easy_ham_files = list.files(path = "C:/CUNY/DATA607/Project4/easy_ham", full.names = TRUE)
+easy_ham2_files = list.files(path = "C:/CUNY/DATA607/Project4/easy_ham_2", full.names = TRUE)
+spam_text = ''
+spam2_text = ''
+easy_ham_text = ''
+easy_ham2_text = ''
+for(f in spam_files) {
+  spam_text = paste(spam_text, (readChar(f, file.info(f)$size)))
+}
+for(f in spam2_files) {
+  spam2_text = paste(spam2_text, (readChar(f, file.info(f)$size)))
+}
+for(f in easy_ham_files) {
+  easy_ham_text = paste(easy_ham_text, (readChar(f, file.info(f)$size)))
+}
+for(f in easy_ham2_files) {
+  easy_ham2_text = paste(easy_ham2_text, (readChar(f, file.info(f)$size)))
+}
+```
+## Split the data into train/test sets
+
+```{r}
+easy_ham.dfr    <- as.data.frame(easy_ham_text)
+easy_ham_2.dfr  <- as.data.frame(easy_ham2_text)
+spam.dfr        <- as.data.frame(spam_text)
+spam_2.dfr      <- as.data.frame(spam2_text)
+
+rownames(easy_ham.dfr)    <- NULL
+rownames(easy_ham_2.dfr)  <- NULL
+rownames(spam.dfr)        <- NULL
+rownames(spam_2.dfr)      <- NULL
+
+easy_ham.dfr$outcome    <- 2
+easy_ham_2.dfr$outcome  <- 2
+spam.dfr$outcome        <- 4
+spam_2.dfr$outcome      <- 4
+
+names(easy_ham.dfr)   <- c("text", "outcome")
+names(easy_ham_2.dfr) <- c("text", "outcome")
+names(spam.dfr)       <- c("text", "outcome")
+names(spam_2.dfr)     <- c("text", "outcome")
+
+train.data  <- rbind(easy_ham.dfr, spam.dfr)
+train.num   <- nrow(train.data)
+train.data  <- rbind(train.data, easy_ham_2.dfr, spam_2.dfr)
+names(train.data) <- c("text", "outcome")
+```
+
+## Build the model
+```{r}
+set.seed(2012)
+train_out.data <- train.data$outcome
+train_txt.data <- train.data$text
+matrix <- create_matrix(train_txt.data, language="english", minWordLength=3, removeNumbers=TRUE, stemWords=FALSE, removePunctuation=TRUE, weighting=weightTfIdf)
+container <- create_container(matrix,t(train_out.data), trainSize=1:train.num, testSize=(train.num+1):nrow(train.data), virgin=FALSE)
+#maxent.model    <- train_model(container, "SLDA") Error: cannot allocate vector of size 76.4 Gb
+svm.model       <- train_model(container, "SVM")
+```
+## Comparing the model to the Benchmark
+```{r}
+svm.result    <- classify_model(container, svm.model)
+svm.analytic  <- create_analytics(container, svm.result)
+svm.doc       <- svm.analytic@document_summary
+svm_spam.doc  <- svm.doc[svm.doc$MANUAL_CODE==4, ]
+svm_ham.doc   <- svm.doc[svm.doc$MANUAL_CODE==2, ]
+svm.true.pos  <- nrow(svm_spam.doc[svm_spam.doc$CONSENSUS_CODE==4,]) / nrow(svm_spam.doc)
+svm.false.neg <- nrow(svm_spam.doc[svm_spam.doc$CONSENSUS_CODE==2,]) / nrow(svm_spam.doc)
+svm.true.neg  <- nrow(svm_ham.doc[svm_ham.doc$CONSENSUS_CODE==2,]) / nrow(svm_ham.doc)
+svm.false.pos <- nrow(svm_ham.doc[svm_ham.doc$CONSENSUS_CODE==4,]) / nrow(svm_ham.doc)
+print(svm.true.pos)
+print(svm.false.neg)
+print(svm.true.neg)
+print(svm.false.pos)
+```
