@@ -1,0 +1,123 @@
+---
+title: "Final Project - Is crime decreasing in the US according to the FBI Uniform Crime Reporting (UCR) Program"
+author: "Dmitriy Burtsev"
+output:
+  slidy_presentation:
+    incremental: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load library
+```{r}
+library(tidyverse)
+library(htmltab)
+```
+
+
+## Acquire dataset from web to dataframe
+*The FBI collects these data through the Uniform Crime Reporting (UCR) Program.*
+Crime in the United States, by Volume and Rate per 100,000 Inhabitants, 1997–2016
+Violent crime includes the offenses of murder and nonnegligent manslaughter, rape (legacy definition), robbery, and aggravated assault. Property crime includes the offenses of burglary, larceny-theft, and motor vehicle theft. 
+The UCR Program does not have sufficient data to estimate for arson.
+```{r}
+url <- "https://ucr.fbi.gov/crime-in-the-u.s/2016/crime-in-the-u.s.-2016/topic-pages/tables/table-1"
+dfrm = htmltab(doc = url, which = 1,rm_nodata_cols = F)
+class(dfrm)
+```
+## Convert R data frame to tibble
+I have to convert the original R data frame to Tibble data frame because our column names have spaces.
+```{r}
+df = as_tibble(dfrm)
+class(df)
+```
+
+## Get the structure of the data frame.
+Function str Compactly Display the Structure of an Arbitrary R Object
+```{r}
+str(df)
+```
+
+## Data clean up and transformations - Remove Rows with NA
+Show the number of NA’s in each column of the data frame 
+```{r}
+colSums(is.na(df))
+```
+## There are two colums with NA: Rape(revised definition) and Rape(revised definition) rate
+We should remove colums with NA
+```{r}
+df = select(df, -c(`Rape(revised definition)`,`Rape(revised definition) rate`))
+str(df)
+```
+
+
+## All colums in dataframe are string. We should change some to integers or numbers
+```{r}
+df[["Year"]] = as.integer(df[["Year"]])
+df[["Population"]] = as.integer(gsub(",", "", df[["Population"]], fixed = TRUE))
+df[["Violentcrime"]] = as.integer(gsub(",", "", df[["Violentcrime"]], fixed = TRUE))
+df[["Violent crime rate"]] = as.numeric(df[["Violent crime rate"]])
+df[["Murder andnonnegligent manslaughter"]] = as.integer(gsub(",", "", df[["Murder andnonnegligent manslaughter"]], fixed = TRUE))
+df[["Murder and nonnegligent manslaughter rate"]] = as.numeric(df[["Murder and nonnegligent manslaughter rate"]])
+df[["Rape(legacy definition)"]] = as.integer(gsub(",", "", df[["Rape(legacy definition)"]], fixed = TRUE))
+df[["Rape(legacy definition) rate"]] = as.numeric(df[["Rape(legacy definition) rate"]])
+df[["Robbery"]] = as.integer(gsub(",", "", df[["Robbery"]], fixed = TRUE))
+df[["Robbery rate"]] = as.numeric(df[["Robbery rate"]])
+df[["Aggravated assault"]] = as.integer(gsub(",", "", df[["Aggravated assault"]], fixed = TRUE))
+df[["Aggravated assault rate"]] = as.numeric(df[["Aggravated assault rate"]])
+df[["Property crime"]] = as.integer(gsub(",", "", df[["Property crime"]], fixed = TRUE))
+df[["Property crime rate"]] = as.numeric(gsub(",", "", df[["Property crime rate"]], fixed = TRUE))
+df[["Burglary"]] = as.integer(gsub(",", "", df[["Burglary"]], fixed = TRUE))
+df[["Burglary rate"]] = as.numeric(df[["Burglary rate"]])
+df[["Larceny-theft"]] = as.integer(gsub(",", "", df[["Larceny-theft"]], fixed = TRUE))
+df[["Larceny-theft rate"]] = as.numeric(gsub(",", "", df[["Larceny-theft rate"]], fixed = TRUE))
+df[["Motor vehicle theft"]] = as.integer(gsub(",", "", df[["Motor vehicle theft"]], fixed = TRUE))
+df[["Motor vehicle theft rate"]] = as.numeric(df[["Motor vehicle theft rate"]])
+```
+## Create a table directly from R Markdown
+```{r}
+knitr::kable(df, caption = 'Crime in the United States')
+```
+
+## Summary of Data in Data Frame
+The statistical summary and nature of the data can be obtained by applying summary() function
+```{r}
+print(summary(df))  
+```
+
+## Pivot Year and Violentcrime columns from dataFrame
+```{r}
+df_year_violent = select(df, Year, Violentcrime)
+tbl2 = df_year_violent %>% pivot_wider(names_from = Year, values_from = c(Violentcrime))
+knitr::kable(tbl2, caption = 'Crime in the United States by Year')
+```
+
+## Statistical analysys
+
+```{r}
+ggplot(data = df, aes(x=Year)) + geom_point(aes(y = `Violent crime rate`, color = "Violent crime rate")) + 
+geom_point(aes(y = `Murder and nonnegligent manslaughter rate`, color = "Murder and nonnegligent manslaughter rate")) +
+geom_point(aes(y = `Rape(legacy definition) rate`, color = "Rape(legacy definition) rate")) +
+geom_point(aes(y = `Robbery rate`, color = "Robbery rate")) +
+geom_point(aes(y = `Aggravated assault rate`, color = "Aggravated assault rate")) + 
+geom_point(aes(y = `Property crime rate`, color = "Property crime rate")) +
+geom_point(aes(y = `Burglary rate`, color = "Burglary rate")) +  
+geom_point(aes(y = `Larceny-theft rate`, color = "Larceny-theft rate")) +
+geom_point(aes(y = `Motor vehicle theft rate`, color = "Motor vehicle theft rate"))  
+```
+
+## I visualize the results of your simple linear regression.
+Add the regression line using geom_smooth() and typing in lm as  method for creating the line.
+I used linear regression.
+```{r}
+df.graph<-ggplot(df, aes(x = Year, y=`Violent crime rate`)) + geom_point() + geom_smooth(method="lm", col="black")
+df.graph
+```
+
+## Conclusion
+
+Violent crime is decreasing over the years (1997-2016). We have a lover Rate
+per 100,000 Inhabitants in 2016 than in 1997. There is a small increase in crime from 2014 to 2016.
+Unfortunately FBI doesn't publish the data belong the 2016 year.
